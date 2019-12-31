@@ -10,6 +10,7 @@ type RedconAcceptFunc func(conn redcon.Conn) bool
 type RedconClosedFunc func(conn redcon.Conn, err error)
 
 type RedconServeMux struct {
+	rs *redcon.Server
 	handlers map[string]RedconHandlerFunc
 	accept   func(conn redcon.Conn) bool
 	closed   func(conn redcon.Conn, err error)
@@ -65,10 +66,17 @@ func (m *RedconServeMux) Closed(f RedconClosedFunc) {
 }
 
 func (m *RedconServeMux) Run(address string) error {
-	return redcon.ListenAndServe(
+	m.rs = redcon.NewServerNetwork(
+		"tcp",
 		address,
 		m.do,
 		m.accept,
 		m.closed,
 	)
+
+	return m.rs.ListenAndServe()
+}
+
+func (m *RedconServeMux) Close() error {
+	return m.rs.Close()
 }
